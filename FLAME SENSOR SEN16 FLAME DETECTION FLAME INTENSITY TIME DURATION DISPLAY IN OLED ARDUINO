@@ -1,0 +1,110 @@
+#include <Wire.h>
+#include <Adafruit_GFX.h>
+#include <Adafruit_SSD1306.h>
+
+#define SCREEN_WIDTH 128
+#define SCREEN_HEIGHT 64
+
+Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, -1);
+
+// Pins
+int flameDO = 2;      // Digital output from flame sensor
+int flameAO = A0;     // Analog output from flame sensor
+int ledPin  = 13;     // Built-in LED
+
+// Variables
+int lastIntensity = 0;
+unsigned long startTime = 0;
+float durationSec = 0.000;
+bool flameWasOn = false;
+
+// 16x8 Flame Icon
+const unsigned char flame_icon[] PROGMEM = {
+  0x04,0x00,
+  0x0E,0x00,
+  0x1F,0x00,
+  0x3F,0x80,
+  0x3F,0x80,
+  0x1F,0x00,
+  0x0E,0x00,
+  0x04,0x00
+};
+
+void setup() {
+  pinMode(flameDO, INPUT);
+  pinMode(ledPin, OUTPUT);
+
+  Serial.begin(9600);
+
+  display.begin(SSD1306_SWITCHCAPVCC, 0x3C);
+  display.clearDisplay();
+  display.display();
+}
+
+void loop() {
+
+  int flame = digitalRead(flameDO);
+  int intensity = analogRead(flameAO);
+
+  // Flame detected
+  if (flame == LOW) {
+
+    digitalWrite(ledPin, HIGH);
+
+    if (!flameWasOn) {
+      startTime = millis();
+      flameWasOn = true;
+    }
+
+    durationSec = (millis() - startTime) / 1000.0;
+    lastIntensity = intensity;
+  }
+
+  // No flame
+  else {
+
+    digitalWrite(ledPin, LOW);
+    flameWasOn = false;
+  }
+
+  // OLED Display
+  display.clearDisplay();
+  display.setTextSize(1);
+  display.setTextColor(WHITE);
+
+  display.setCursor(0,0);
+
+  if (flame == LOW) {
+    display.print("FLAMING");
+    display.drawBitmap(70, 0, flame_icon, 16, 8, WHITE);
+  }
+  else {
+    display.print("NOT FLAMING");
+  }
+
+  display.setCursor(0,20);
+  display.print("Intensity:");
+  display.println(lastIntensity);
+
+  display.setCursor(0,40);
+  display.print("Duration:");
+  display.print(durationSec,3);
+  display.println(" s");
+
+  display.display();
+
+  // Serial Monitor Output
+  if (flame == LOW)
+    Serial.print("FLAMING");
+  else
+    Serial.print("NOT FLAMING");
+
+  Serial.print(" | Intensity: ");
+  Serial.print(lastIntensity);
+
+  Serial.print(" | Duration: ");
+  Serial.print(durationSec,3);
+  Serial.println(" s");
+
+  delay(100);
+}
