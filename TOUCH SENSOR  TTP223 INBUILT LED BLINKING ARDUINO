@@ -1,0 +1,17 @@
+int touchPin = 2;      // Sensor output connected to pin 2
+int ledPin = 13;       // Built-in LED
+
+void setup() {
+  pinMode(touchPin, INPUT);
+  pinMode(ledPin, OUTPUT);
+}
+
+void loop() {
+  int touchState = digitalRead(touchPin);
+
+  if (touchState == HIGH) {
+    digitalWrite(ledPin, HIGH);   // LED ON while touching
+  } else {
+    digitalWrite(ledPin, LOW);    // LED OFF when released
+  }
+}
