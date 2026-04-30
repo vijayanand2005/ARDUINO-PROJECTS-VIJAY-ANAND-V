@@ -1,0 +1,71 @@
+#include <Wire.h>
+#include <Adafruit_GFX.h>
+#include <Adafruit_SSD1306.h>
+#include <DHT.h>
+
+// OLED
+#define SCREEN_WIDTH 128
+#define SCREEN_HEIGHT 64
+Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, -1);
+
+// DHT11
+#define DHTPIN 4
+#define DHTTYPE DHT11
+DHT dht(DHTPIN, DHTTYPE);
+
+// MQ135
+#define MQ135_PIN A0
+
+// Flame sensor (DIGITAL ONLY)
+#define FLAME_DO 2
+
+void setup() {
+  Serial.begin(9600);
+
+  dht.begin();
+  pinMode(FLAME_DO, INPUT);
+
+  display.begin(SSD1306_SWITCHCAPVCC, 0x3C);
+  display.clearDisplay();
+  display.setTextColor(WHITE);
+}
+
+void loop() {
+
+  float temp = dht.readTemperature();
+  float hum  = dht.readHumidity();
+
+  int mq = analogRead(MQ135_PIN);
+  int flame = digitalRead(FLAME_DO);
+
+  if (isnan(temp) || isnan(hum)) return;
+
+  // OLED DISPLAY
+  display.clearDisplay();
+  display.setTextSize(1);
+  display.setCursor(0, 0);
+
+  display.print("Temp: "); display.print(temp); display.println("C");
+  display.print("Hum : "); display.print(hum); display.println("%");
+
+  display.print("Air : "); display.println(mq);
+
+  display.print("Flame: ");
+  if (flame == LOW)
+    display.println("DETECTED");
+  else
+    display.println("SAFE");
+
+  display.display();
+
+  // SEND TO ESP32
+  Serial.print(temp);
+  Serial.print(",");
+  Serial.print(hum);
+  Serial.print(",");
+  Serial.print(mq);
+  Serial.print(",");
+  Serial.println(flame);
+
+  delay(1000);
+}
